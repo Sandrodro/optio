@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: optio
+      POSTGRES_PASSWORD: optio
+      POSTGRES_DB: optio
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U optio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: optio
+      RABBITMQ_DEFAULT_PASS: optio
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # management UI
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9200/_cluster/health || exit 1",
+        ]
+      interval: 10s
+      retries: 20
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgres://optio:optio@postgres:5432/optio
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://optio:optio@rabbitmq:5672
+      ELASTICSEARCH_NODE: http://elasticsearch:9200
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      elasticsearch: { condition: service_healthy }
+    volumes:
+      - ./api/src:/app/src # hot reload during dev
+    command: npm run start:dev
+
+  ui:
+    build: ./ui
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./ui/src:/app/src
+    command: npm start -- --host 0.0.0.0 --poll 2000
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:
+  rabbitdata:
+  esdata:
