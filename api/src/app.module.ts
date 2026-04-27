@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { ClientEntity } from './clients/client.entity';
 import { TransactionEntity } from './transactions/transaction.entity';
 import { SegmentEntity } from './segments/segment.entity';
+import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
 
 @Module({
   imports: [
@@ -14,10 +15,11 @@ import { SegmentEntity } from './segments/segment.entity';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       synchronize: false, // sync ony with migrations
-      entities: [ClientEntity, TransactionEntity, SegmentEntity],
+      entities: [ClientEntity, TransactionEntity, SegmentEntity], // glob pattern did not work
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
       logging: ['error', 'warn'],
     }),
+    ElasticsearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -17,6 +17,9 @@ export class ClientEntity {
   @Column({ length: 2 })
   country: string;
 
+  @Column({ type: 'date' })
+  signup_date: string;
+
   @Column({ type: 'timestamp', nullable: true })
   last_transaction_at: Date | null;
 

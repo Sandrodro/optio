@@ -7,6 +7,6 @@ import { SegmentEntity } from './segments/segment.entity';
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [ClientEntity, TransactionEntity, SegmentEntity],
+  entities: [ClientEntity, TransactionEntity, SegmentEntity], // glob pattern did not work
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 });
