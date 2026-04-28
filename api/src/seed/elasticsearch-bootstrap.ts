@@ -1,7 +1,6 @@
 import { Client } from '@elastic/elasticsearch';
 
 export async function ensureClientsIndex(es: Client): Promise<void> {
-  console.log('DATABASE_URL:', process.env.DATABASE_URL);
   const exists = await es.indices.exists({ index: 'clients' });
   if (exists) {
     await es.indices.delete({ index: 'clients' }); // ensure idempotency

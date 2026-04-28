@@ -27,7 +27,7 @@ export class SeedCommand extends CommandRunner {
     const clients = await this.clientSeeder.seed(500);
 
     this.logger.log('seeding transactions and precomputed rollups...');
-    await this.transactionSeeder.seed(clients, 4);
+    await this.transactionSeeder.seed(clients, 6);
 
     this.logger.log('seedint segments...');
     await this.segmentSeeder.seed();
