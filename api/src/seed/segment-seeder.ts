@@ -12,7 +12,9 @@ export class SegmentSeeder {
   ) {}
 
   async seed(): Promise<void> {
-    await this.repo.clear();
+    await this.repo.query(
+      'TRUNCATE TABLE "delta_history", "segments" RESTART IDENTITY CASCADE',
+    );
 
     const segments: Partial<SegmentEntity>[] = [
       {
@@ -33,7 +35,7 @@ export class SegmentSeeder {
       },
       {
         id: 'high-spenders',
-        name: 'High spenders (>1500 in 60 days)',
+        name: 'High spenders (>1000 in 60 days)',
         type: 'dynamic',
         rules: {
           esQuery: esb
@@ -41,7 +43,7 @@ export class SegmentSeeder {
             .query(
               esb
                 .boolQuery()
-                .filter(esb.rangeQuery('total_purchases_60d').gt(1500)),
+                .filter(esb.rangeQuery('total_purchases_60d').gt(1200)),
             )
             .toJSON(),
           segmentDependencies: [],
@@ -49,7 +51,7 @@ export class SegmentSeeder {
       },
       {
         id: 'lapsed-customers',
-        name: 'Lapsed customers (3+ transactions in all time, none in 45 days)',
+        name: 'Lapsed customers (3+ transactions in all time, none in 24 days)',
         type: 'dynamic',
         rules: {
           esQuery: esb
@@ -58,7 +60,7 @@ export class SegmentSeeder {
               esb
                 .boolQuery()
                 .filter(esb.rangeQuery('total_transaction_count').gte(3))
-                .filter(esb.rangeQuery('last_transaction_at').lt('now-45d/d')),
+                .filter(esb.rangeQuery('last_transaction_at').lt('now-24d/d')),
             )
             .toJSON(),
           segmentDependencies: [],

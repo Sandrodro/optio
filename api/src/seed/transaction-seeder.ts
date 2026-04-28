@@ -28,9 +28,9 @@ export class TransactionSeeder {
           this.transactionsRepo.create({
             client_id: client.id,
             amount: faker.number
-              .float({ min: 300, max: 1800, fractionDigits: 2 })
+              .float({ min: 100, max: 700, fractionDigits: 2 })
               .toString(),
-            occured_at: faker.date.recent({ days: 120 }),
+            occured_at: faker.date.recent({ days: 140 }),
           }),
         );
       }
@@ -43,7 +43,9 @@ export class TransactionSeeder {
 
   private async computeRollups(clients: ClientEntity[]): Promise<void> {
     const now = new Date();
-    const days60Ago = new Date(now.getTime() - 60 - 86400 * 1000);
+
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const days60Ago = new Date(now.getTime() - 60 * ONE_DAY_MS);
 
     for (const client of clients) {
       const transactions = await this.transactionsRepo.find({

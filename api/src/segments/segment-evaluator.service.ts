@@ -22,7 +22,7 @@ export class SegmentEvaluator {
   async evaluate(segmentId: string): Promise<string[]> {
     const segment = await this.segments.findOne({ where: { id: segmentId } });
 
-    if (!segment) throw new Error(`segment ${segmentId} not found`);
+    if (!segment) throw new NotFoundException(`segment ${segmentId} not found`);
 
     const depFilters = await this.buildDependencyFilters(
       segment.rules.segmentDependencies,
