@@ -27,9 +27,6 @@ export class ClientEntity {
   total_transaction_count: number;
 
   @Column({ type: 'numeric', precision: 12, scale: 2, default: 0 })
-  total_purchases_30d: string;
-
-  @Column({ type: 'numeric', precision: 12, scale: 2, default: 0 })
   total_purchases_60d: string;
 
   @CreateDateColumn()

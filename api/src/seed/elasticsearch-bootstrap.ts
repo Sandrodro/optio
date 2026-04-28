@@ -15,7 +15,6 @@ export async function ensureClientsIndex(es: Client): Promise<void> {
         signup_date: { type: 'date' },
         last_transaction_at: { type: 'date' },
         total_transaction_count: { type: 'long' }, // long for whole numbers, doable at our scale
-        total_purchases_30d: { type: 'double' }, // double for decimals
         total_purchases_60d: { type: 'double' },
       },
     },
