@@ -28,7 +28,7 @@ export class TransactionSeeder {
           this.transactionsRepo.create({
             client_id: client.id,
             amount: faker.number
-              .float({ min: 5, max: 700, fractionDigits: 2 })
+              .float({ min: 300, max: 1800, fractionDigits: 2 })
               .toString(),
             occured_at: faker.date.recent({ days: 120 }),
           }),
@@ -71,7 +71,7 @@ export class TransactionSeeder {
         doc: {
           last_transaction_at: last,
           total_transaction_count: numOfTransactions,
-          total_purchase_60d: sum60s,
+          total_purchases_60d: sum60s,
         },
       });
     }
