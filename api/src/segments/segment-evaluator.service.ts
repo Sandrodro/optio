@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import Redis from 'ioredis';
 import { Client as EsClient } from '@elastic/elasticsearch';
 import { SegmentEntity } from './segment.entity';
-import { RedisKeys } from 'src/redis/redis.keys';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { ES_CLIENT } from '../elasticsearch/elasticsearch.module';
+import { RedisKeys } from '../redis/redis.keys';
 
 @Injectable()
 export class SegmentEvaluator {
@@ -59,16 +59,18 @@ export class SegmentEvaluator {
     depFilters: Array<{ terms: { _id: string[] } }>,
   ): any {
     const cloned = structuredClone(baseQuery);
-    if (
-      !cloned.query?.bool?.filter ||
-      !Array.isArray(cloned.query.bool.filter)
-    ) {
-      throw new Error(
-        `segment query must have shape { query: { bool: { filter: [...] } } }`,
-      );
+
+    cloned.query ??= {};
+    cloned.query.bool ??= {};
+
+    const existing = cloned.query.bool.filter;
+    if (existing === undefined) {
+      cloned.query.bool.filter = [];
+    } else if (!Array.isArray(existing)) {
+      cloned.query.bool.filter = [existing];
     }
+
     cloned.query.bool.filter.push(...depFilters);
-    return cloned;
     return cloned;
   }
 
