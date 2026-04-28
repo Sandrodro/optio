@@ -8,6 +8,8 @@ import { TransactionEntity } from './transactions/transaction.entity';
 import { SegmentEntity } from './segments/segment.entity';
 import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
 import { SeedModule } from './seed/seed.module';
+import { RedisModule } from './redis/redis.module';
+import { DeltaHistoryEntity } from './segments/delta-history.entity';
 
 @Module({
   imports: [
@@ -16,12 +18,18 @@ import { SeedModule } from './seed/seed.module';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       synchronize: false, // sync ony with migrations
-      entities: [ClientEntity, TransactionEntity, SegmentEntity], // glob pattern did not work
+      entities: [
+        ClientEntity,
+        DeltaHistoryEntity,
+        TransactionEntity,
+        SegmentEntity,
+      ], // glob pattern did not work
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
       logging: ['error', 'warn'],
     }),
     ElasticsearchModule,
     SeedModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],
