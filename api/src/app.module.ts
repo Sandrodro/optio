@@ -7,6 +7,7 @@ import { ClientEntity } from './clients/client.entity';
 import { TransactionEntity } from './transactions/transaction.entity';
 import { SegmentEntity } from './segments/segment.entity';
 import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
       logging: ['error', 'warn'],
     }),
     ElasticsearchModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

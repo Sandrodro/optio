@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as esb from 'elastic-builder';
-import { SegmentEntity } from 'src/segments/segment.entity';
+import { SegmentEntity } from '../segments/segment.entity';
 
 @Injectable()
 export class SegmentSeeder {

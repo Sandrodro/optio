@@ -21,10 +21,11 @@
     "typeorm": "typeorm-ts-node-commonjs -d src/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "seed": "ts-node src/cli.ts seed"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^9.3.4",
+    "@elastic/elasticsearch": "^8.19.1",
     "@faker-js/faker": "^10.4.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -39,7 +40,7 @@
     "amqplib": "^1.0.3",
     "elastic-builder": "^4.1.0",
     "ioredis": "^5.10.1",
-    "nestjs-command": "^3.1.5",
+    "nest-commander": "^3.20.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

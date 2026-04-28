@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { ClientEntity } from '../clients/client.entity';
 
-@Entity('transactions ')
+@Entity('transactions')
 @Index(['client_id', 'occured_at'])
 export class TransactionEntity {
   @PrimaryGeneratedColumn('uuid')

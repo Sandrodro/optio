@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client as EsClient } from '@elastic/elasticsearch';
-import { ClientEntity } from 'src/clients/client.entity';
+import { ClientEntity } from '../clients/client.entity';
 
 const COUNTRIES = ['GE', 'US', 'GB', 'DE', 'FR', 'IT', 'ES', 'TR'];
 
@@ -17,7 +17,9 @@ export class ClientSeeder {
   ) {}
 
   async seed(count: number): Promise<ClientEntity[]> {
-    await this.repo.clear(); // ensure idempotency
+    await this.repo.query(
+      'TRUNCATE TABLE "transactions", "clients" RESTART IDENTITY CASCADE',
+    );
 
     const clients: ClientEntity[] = [];
 
@@ -28,7 +30,6 @@ export class ClientSeeder {
         signup_date: faker.date.past({ years: 3 }).toISOString().slice(0, 10),
         last_transaction_at: null,
         total_transaction_count: 0,
-        total_purchases_30d: '0',
         total_purchases_60d: '0',
       });
       clients.push(client);
@@ -53,7 +54,6 @@ export class ClientSeeder {
       signup_date: c.signup_date,
       last_transaction_at: c.last_transaction_at,
       total_transaction_count: c.total_transaction_count,
-      total_purchases_30d: parseFloat(c.total_purchases_30d),
       total_purchases_60d: parseFloat(c.total_purchases_60d),
     };
   }
