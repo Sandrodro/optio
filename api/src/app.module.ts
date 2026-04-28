@@ -10,6 +10,7 @@ import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
 import { SeedModule } from './seed/seed.module';
 import { RedisModule } from './redis/redis.module';
 import { DeltaHistoryEntity } from './segments/delta-history.entity';
+import { SegmentsModule } from './segments/segments.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DeltaHistoryEntity } from './segments/delta-history.entity';
     ElasticsearchModule,
     SeedModule,
     RedisModule,
+    SegmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
