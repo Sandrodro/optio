@@ -14,6 +14,7 @@ import { SegmentsModule } from './segments/segments.module';
 import { IngressModule } from './ingress/ingress.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     SegmentsModule,
     MessagingModule,
     IngressModule,
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

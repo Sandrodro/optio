@@ -24,7 +24,7 @@ import { CascadeConsumer } from './cascade.consumer';
     RecomputeSchedulerService,
     RecomputeTickService,
     SegmentRecomputeConsumer,
-    CascadeConsumer
+    CascadeConsumer,
   ],
   exports: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
   controllers: [SegmentsController],
