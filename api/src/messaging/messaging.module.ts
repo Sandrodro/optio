@@ -10,7 +10,7 @@ import { EXCHANGES } from './messaging.constants';
           { name: EXCHANGES.DATA_CHANGES, type: 'topic' },
           { name: EXCHANGES.SEGMENT_EVENTS, type: 'topic' },
         ],
-        uri: process.env.RABBITMQ_URL ?? 'amqp://guest:guest@rabbitmq:5672',
+        uri: process.env.RABBITMQ_URL,
         connectionInitOptions: { wait: true, timeout: 20_000 },
         enableControllerDiscovery: true,
       }),

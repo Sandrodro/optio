@@ -2,7 +2,7 @@ export interface TransactionCreatedEvent {
   transaction_id: string;
   client_id: string;
   amount: number;
-  occurred_at: string; // ISO timestamp
+  occurred_at: string;
 }
 
 export interface ClientUpdatedEvent {
