@@ -11,6 +11,8 @@ import { SeedModule } from './seed/seed.module';
 import { RedisModule } from './redis/redis.module';
 import { DeltaHistoryEntity } from './segments/delta-history.entity';
 import { SegmentsModule } from './segments/segments.module';
+import { IngressModule } from './ingress/ingress.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { SegmentsModule } from './segments/segments.module';
     SeedModule,
     RedisModule,
     SegmentsModule,
+    MessagingModule,
+    IngressModule,
   ],
   controllers: [AppController],
   providers: [AppService],

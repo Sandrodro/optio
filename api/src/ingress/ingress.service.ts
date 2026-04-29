@@ -49,7 +49,7 @@ export class IngressService {
       const clientsRepo = manager.getRepository(ClientEntity);
 
       // lock
-      const client = await clientsRepo
+      const clientRow = await clientsRepo
         .createQueryBuilder('c')
         .setLock('pessimistic_write')
         .where('c.id = :id', { id: transactionInput.client_id })
@@ -57,6 +57,10 @@ export class IngressService {
 
       if (!transactionInput.client_id) {
         throw new Error(`client with ${transactionInput.client_id} not found!`);
+      }
+
+      if (!clientRow) {
+        throw new Error(`client with ${transactionInput.client_id} not found`);
       }
 
       const transaction = await transactionsRepo.save(
@@ -70,19 +74,21 @@ export class IngressService {
       const sixtyDaysAgo = new Date(Date.now() - SIXTY_DAYS_MS);
 
       // recompute rollups
-      const { sum } = await transactionsRepo
+      const sumRow = await transactionsRepo
         .createQueryBuilder('t')
         .select('COALESCE(SUM(t.amount), 0)', 'sum')
         .where('t.client_id = :id', { id: transactionInput.client_id })
         .andWhere('t.occured_at >= :cutoff', { cutoff: sixtyDaysAgo })
         .getRawOne<{ sum: string }>();
 
-      const newCount = client.total_transaction_count + 1;
+      const newTotal60 = parseFloat(sumRow?.sum ?? '0');
+
+      const newCount = clientRow.total_transaction_count + 1;
       const newLast =
-        client.last_transaction_at && client.last_transaction_at > occured_at
-          ? client.last_transaction_at
+        clientRow.last_transaction_at &&
+        clientRow.last_transaction_at > occured_at
+          ? clientRow.last_transaction_at
           : occured_at;
-      const newTotal60 = parseFloat(sum);
 
       await clientsRepo.update(transactionInput.client_id, {
         last_transaction_at: newLast,
