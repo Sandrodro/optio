@@ -13,6 +13,7 @@ import { DeltaHistoryEntity } from './segments/delta-history.entity';
 import { SegmentsModule } from './segments/segments.module';
 import { IngressModule } from './ingress/ingress.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MessagingModule } from './messaging/messaging.module';
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
       logging: ['error', 'warn'],
     }),
+    ScheduleModule.forRoot(),
     ElasticsearchModule,
     SeedModule,
     RedisModule,

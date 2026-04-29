@@ -6,10 +6,24 @@ import { SegmentEvaluator } from './segment-evaluator.service';
 import { SegmentsController } from './segments.controller';
 import { SegmentRecomputeService } from './segment-recompute.service';
 import { EvaluateAllCommand } from './evaluate-all.command';
+import { MessagingModule } from '../messaging/messaging.module';
+import { RecomputeSchedulerService } from './recompute-scheduler.service';
+import { RecomputeTickService } from './recompute-tick.service';
+import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SegmentEntity, DeltaHistoryEntity])],
-  providers: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
+  imports: [
+    TypeOrmModule.forFeature([SegmentEntity, DeltaHistoryEntity]),
+    MessagingModule,
+  ],
+  providers: [
+    SegmentEvaluator,
+    SegmentRecomputeService,
+    EvaluateAllCommand,
+    RecomputeSchedulerService,
+    RecomputeTickService,
+    SegmentRecomputeConsumer
+  ],
   exports: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
   controllers: [SegmentsController],
 })

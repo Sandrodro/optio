@@ -105,22 +105,11 @@ export class IngressService {
     });
 
     // update ES
-    try {
-      await this.es.update({
-        index: 'clients',
-        id: transactionInput.client_id,
-        doc: {
-          last_transaction_at: rollups.last_transaction_at,
-          total_transaction_count: rollups.total_transaction_count,
-          total_purchases_60d: rollups.total_purchases_60d,
-        },
-        refresh: 'wait_for',
-      });
-    } catch (err) {
-      this.log.error(
-        `ES update failed for client ${transactionInput.client_id} after postgres commit: ${(err as Error).message}`,
-      );
-    }
+    await this.updateEsWithRetry(transactionInput.client_id, {
+      last_transaction_at: rollups.last_transaction_at,
+      total_transaction_count: rollups.total_transaction_count,
+      total_purchases_60d: rollups.total_purchases_60d,
+    });
 
     const event: TransactionCreatedEvent = {
       transaction_id: rollups.transaction_id,
@@ -142,6 +131,37 @@ export class IngressService {
     }
   }
 
+  private async updateEsWithRetry(
+    clientId: string,
+    doc: Record<string, unknown> | UpdateClientFieldsInput,
+    attempt = 1,
+  ): Promise<void> {
+    const MAX_ATTEMPTS = 5;
+
+    try {
+      await this.es.update({
+        index: 'clients',
+        id: clientId,
+        doc,
+        refresh: 'wait_for',
+      });
+    } catch (e: any) {
+      const isVersionConflict =
+        e?.meta?.body?.error?.type === 'version_conflict_engine_exception' ||
+        String(e?.message ?? '').includes('version_conflict');
+
+      if (isVersionConflict && attempt < MAX_ATTEMPTS) {
+        const delayMs = 20 * 2 ** (attempt - 1) + Math.random() * 20;
+        await new Promise((r) => setTimeout(r, delayMs));
+        return this.updateEsWithRetry(clientId, doc, attempt + 1);
+      }
+
+      this.log.error(
+        `ES update failed for client ${clientId} after ${attempt} attempt(s): ${(e as Error).message}`,
+      );
+    }
+  }
+
   async updateClient(
     clientId: string,
     patch: UpdateClientFieldsInput,
@@ -153,18 +173,7 @@ export class IngressService {
       throw new Error(`client ${clientId} not found`);
     }
 
-    try {
-      await this.es.update({
-        index: 'clients',
-        id: clientId,
-        doc: patch,
-        refresh: 'wait_for',
-      });
-    } catch (e) {
-      this.log.error(
-        `ES update failed for client ${clientId}: ${(e as Error).message}`,
-      );
-    }
+    await this.updateEsWithRetry(clientId, patch);
 
     const event: ClientUpdatedEvent = { client_id: clientId };
 
