@@ -5,8 +5,14 @@ import {
   HttpStatus,
   Param,
   Patch,
+  BadRequestException,
+  Post,
 } from '@nestjs/common';
-import { IngressService } from './ingress.service';
+import {
+  IngressService,
+  BulkCreateResult,
+  CreateClientInput,
+} from './ingress.service';
 
 interface UpdateClient {
   country?: string;
@@ -22,7 +28,28 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() data: UpdateClient,
   ): Promise<{ ok: true }> {
+    if (!data || Object.keys(data).length === 0) {
+      throw new BadRequestException('body must contain at least one field');
+    }
+
+    const allowedKeys = new Set(['country']);
+    for (const key of Object.keys(data)) {
+      if (!allowedKeys.has(key)) {
+        throw new BadRequestException(`field '${key}' is not updateable`);
+      }
+    }
+
     await this.ingress.updateClient(id, data);
     return { ok: true };
+  }
+
+  @Post('bulk')
+  async bulkCreate(
+    @Body() body: { clients: CreateClientInput[] },
+  ): Promise<BulkCreateResult> {
+    if (!Array.isArray(body?.clients)) {
+      throw new BadRequestException('clients must be an array');
+    }
+    return this.ingress.bulkCreateClients(body.clients);
   }
 }

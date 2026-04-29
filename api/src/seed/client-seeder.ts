@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Client as EsClient } from '@elastic/elasticsearch';
 import { ClientEntity } from '../clients/client.entity';
 
-const COUNTRIES = ['GE', 'US', 'GB', 'DE', 'FR', 'IT', 'ES', 'TR'];
+export const COUNTRIES = ['GE', 'US', 'GB', 'DE', 'FR', 'IT', 'ES', 'TR'];
 
 @Injectable()
 export class ClientSeeder {

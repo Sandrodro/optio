@@ -11,10 +11,12 @@ import { RecomputeSchedulerService } from './recompute-scheduler.service';
 import { RecomputeTickService } from './recompute-tick.service';
 import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
 import { CascadeConsumer } from './cascade.consumer';
+import { SegmentsReadService } from './segments-read.service';
+import { ClientEntity } from 'src/clients/client.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SegmentEntity, DeltaHistoryEntity]),
+    TypeOrmModule.forFeature([SegmentEntity, ClientEntity, DeltaHistoryEntity]),
     MessagingModule,
   ],
   providers: [
@@ -25,6 +27,7 @@ import { CascadeConsumer } from './cascade.consumer';
     RecomputeTickService,
     SegmentRecomputeConsumer,
     CascadeConsumer,
+    SegmentsReadService,
   ],
   exports: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
   controllers: [SegmentsController],

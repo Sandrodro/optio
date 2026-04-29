@@ -11,6 +11,7 @@ import {
   ClientUpdatedEvent,
   TransactionCreatedEvent,
 } from '../messaging/messaging.events';
+import { BulkImportedEvent } from '../messaging/messaging.events';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SIXTY_DAYS_MS = 60 * ONE_DAY_MS;
@@ -23,6 +24,17 @@ export interface IngestTransactionInput {
 
 export interface UpdateClientFieldsInput {
   country?: string;
+}
+
+export interface CreateClientInput {
+  country: string;
+  name: string;
+  signup_date?: string;
+}
+
+export interface BulkCreateResult {
+  created_count: number;
+  chunk_count: number;
 }
 
 @Injectable()
@@ -188,5 +200,89 @@ export class IngressService {
         `publish failed for client.updated ${clientId}: ${(e as Error).message}`,
       );
     }
+  }
+
+  async bulkCreateClients(
+    inputs: CreateClientInput[],
+  ): Promise<BulkCreateResult> {
+    if (inputs.length === 0) {
+      return { created_count: 0, chunk_count: 0 };
+    }
+
+    const CHUNK_SIZE = 1000;
+    const chunkCount = Math.ceil(inputs.length / CHUNK_SIZE);
+
+    for (let i = 0; i < chunkCount; i++) {
+      const start = i * CHUNK_SIZE;
+      const chunk = inputs.slice(start, start + CHUNK_SIZE);
+      const isLastChunk = i === chunkCount - 1;
+      await this.processClientChunk(chunk, i, chunkCount, isLastChunk);
+    }
+
+    return { created_count: inputs.length, chunk_count: chunkCount };
+  }
+
+  private async processClientChunk(
+    chunk: CreateClientInput[],
+    chunkIndex: number,
+    chunkCount: number,
+    isLastChunk: boolean,
+  ): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const insertResult = await this.clients
+      .createQueryBuilder()
+      .insert()
+      .into(ClientEntity)
+      .values(
+        chunk.map((c) => ({
+          name: c.name,
+          country: c.country,
+          signup_date: c.signup_date ?? today,
+        })),
+      )
+      .returning(['id'])
+      .execute();
+
+    const ids: string[] = insertResult.raw.map((r: { id: string }) => r.id);
+
+    const operations = ids.flatMap((id, idx) => [
+      { index: { _index: 'clients', _id: id } },
+      {
+        name: chunk[idx].name,
+        country: chunk[idx].country,
+        signup_date: chunk[idx].signup_date ?? today,
+        last_transaction_at: null,
+        total_transaction_count: 0,
+        total_purchases_60d: 0,
+      },
+    ]);
+
+    await this.es.bulk({
+      operations,
+      refresh: isLastChunk ? 'wait_for' : false,
+    });
+
+    const event: BulkImportedEvent = {
+      client_ids: ids,
+      chunk_index: chunkIndex,
+      chunk_count: chunkCount,
+    };
+
+    try {
+      await this.amqp.publish(
+        EXCHANGES.DATA_CHANGES,
+        DATA_CHANGE_KEYS.BULK_IMPORTED,
+        event,
+      );
+    } catch (e) {
+      this.log.error(
+        `publish failed for bulk.imported chunk ${chunkIndex}: ${(e as Error).message}`,
+      );
+    }
+
+    this.log.log(
+      `bulk chunk ${chunkIndex + 1}/${chunkCount}: created ${ids.length} clients`,
+    );
   }
 }

@@ -15,6 +15,8 @@ import { IngressModule } from './ingress/ingress.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WebsocketModule } from './websocket/websocket.module';
+import { SimulationModule } from './simulation/simulation.module';
+import { ClientsModule } from './clients/client.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { WebsocketModule } from './websocket/websocket.module';
     MessagingModule,
     IngressModule,
     WebsocketModule,
+    SimulationModule,
+    ClientsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
