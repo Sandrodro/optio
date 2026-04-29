@@ -10,6 +10,7 @@ import { MessagingModule } from '../messaging/messaging.module';
 import { RecomputeSchedulerService } from './recompute-scheduler.service';
 import { RecomputeTickService } from './recompute-tick.service';
 import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
+import { CascadeConsumer } from './cascade.consumer';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
     EvaluateAllCommand,
     RecomputeSchedulerService,
     RecomputeTickService,
-    SegmentRecomputeConsumer
+    SegmentRecomputeConsumer,
+    CascadeConsumer
   ],
   exports: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
   controllers: [SegmentsController],

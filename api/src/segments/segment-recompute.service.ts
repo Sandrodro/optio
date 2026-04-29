@@ -6,6 +6,12 @@ import { REDIS_CLIENT } from '../redis/redis.module';
 import { RedisKeys } from '../redis/redis.keys';
 import { SegmentEvaluator } from './segment-evaluator.service';
 import { DeltaHistoryEntity, DeltaReason } from './delta-history.entity';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import {
+  EXCHANGES,
+  SEGMENT_EVENT_KEYS,
+} from '../messaging/messaging.constants';
+import { SegmentDeltaComputedEvent } from '../messaging/messaging.events';
 
 export interface RecomputeResult {
   segmentId: string;
@@ -24,6 +30,7 @@ export class SegmentRecomputeService {
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     @InjectRepository(DeltaHistoryEntity)
     private readonly deltaHistory: Repository<DeltaHistoryEntity>,
+    private readonly amqp: AmqpConnection,
   ) {}
 
   async recompute(
@@ -74,7 +81,26 @@ export class SegmentRecomputeService {
     this.log.log(
       `recomputed ${segmentId} (${recomputeReason}): +${added.length} -${removed.length}, total=${memberIds.length}`,
     );
+    const event: SegmentDeltaComputedEvent = {
+      segment_id: segmentId,
+      added_client_ids: added,
+      removed_client_ids: removed,
+      total_members_after: memberIds.length,
+      reason: recomputeReason,
+      evaluated_at: new Date().toISOString(),
+    };
 
+    try {
+      await this.amqp.publish(
+        EXCHANGES.SEGMENT_EVENTS,
+        SEGMENT_EVENT_KEYS.DELTA_COMPUTED,
+        event,
+      );
+    } catch (e) {
+      this.log.error(
+        `failed to publish delta event for ${segmentId}: ${(e as Error).message}`,
+      );
+    }
     return {
       segmentId,
       added,
