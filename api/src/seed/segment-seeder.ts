@@ -35,7 +35,7 @@ export class SegmentSeeder {
       },
       {
         id: 'high-spenders',
-        name: 'High spenders (>1000 in 60 days)',
+        name: 'High spenders (>1200 in 60 days)',
         type: 'dynamic',
         rules: {
           esQuery: esb
@@ -51,7 +51,7 @@ export class SegmentSeeder {
       },
       {
         id: 'lapsed-customers',
-        name: 'Lapsed customers (3+ transactions in all time, none in 24 days)',
+        name: 'Lapsed customers (3+ transactions in all time, none in 22 days)',
         type: 'dynamic',
         rules: {
           esQuery: esb
