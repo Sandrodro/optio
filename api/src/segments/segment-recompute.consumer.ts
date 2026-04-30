@@ -27,16 +27,23 @@ export class SegmentRecomputeConsumer {
     const routingKey = amqpMsg?.fields?.routingKey ?? 'unknown';
     this.log.debug(`received ${routingKey}: ${JSON.stringify(payload)}`);
 
-    const dynamicSegments = await this.segments.find({
-      where: { type: 'dynamic' },
-      select: ['id'],
-    });
+    // Only schedule root segments (no segmentDependencies).
+    // Cascade handles dependent segments after their parents recompute,
+    // preventing dependent segments from being double-scheduled.
+    const rootSegments = await this.segments
+      .createQueryBuilder('s')
+      .select('s.id')
+      .where('s.type = :type', { type: 'dynamic' })
+      .andWhere(
+        "COALESCE(jsonb_array_length(s.rules -> 'segmentDependencies'), 0) = 0",
+      )
+      .getMany();
 
-    const ids = dynamicSegments.map((s) => s.id);
+    const ids = rootSegments.map((s) => s.id);
     await this.scheduler.scheduleMany(ids);
 
     this.log.debug(
-      `scheduled ${ids.length} dynamic segment(s) after ${routingKey}`,
+      `scheduled ${ids.length} root dynamic segment(s) after ${routingKey}`,
     );
   }
 }

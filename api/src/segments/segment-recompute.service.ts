@@ -64,6 +64,20 @@ export class SegmentRecomputeService {
       await this.redis.rename(tempKey, canonicalKey);
     }
 
+    this.log.log(
+      `recomputed ${segmentId} (${recomputeReason}): +${added.length} -${removed.length}, total=${memberIds.length}`,
+    );
+
+    if (added.length === 0 && removed.length === 0) {
+      return {
+        segmentId,
+        added,
+        removed,
+        totalMembersAfter: memberIds.length,
+        reason: recomputeReason,
+      };
+    }
+
     try {
       await this.deltaHistory.insert({
         segment_id: segmentId,
@@ -78,9 +92,6 @@ export class SegmentRecomputeService {
       );
     }
 
-    this.log.log(
-      `recomputed ${segmentId} (${recomputeReason}): +${added.length} -${removed.length}, total=${memberIds.length}`,
-    );
     const event: SegmentDeltaComputedEvent = {
       segment_id: segmentId,
       added_client_ids: added,
@@ -89,16 +100,6 @@ export class SegmentRecomputeService {
       reason: recomputeReason,
       evaluated_at: new Date().toISOString(),
     };
-
-    if (added.length === 0 && removed.length === 0) {
-      return {
-        segmentId,
-        added,
-        removed,
-        totalMembersAfter: memberIds.length,
-        reason: recomputeReason,
-      };
-    }
 
     try {
       await this.amqp.publish(
