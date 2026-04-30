@@ -71,6 +71,9 @@ export class SegmentsGateway
     queueOptions: { durable: true },
   })
   onDelta(payload: SegmentDeltaComputedEvent): void {
+    if (!this.server) {
+      return;
+    }
     const room = segmentRoom(payload.segment_id);
 
     this.server.to(room).emit('segment.delta', payload);

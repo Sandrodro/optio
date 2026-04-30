@@ -12,7 +12,7 @@ import { RecomputeTickService } from './recompute-tick.service';
 import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
 import { CascadeConsumer } from './cascade.consumer';
 import { SegmentsReadService } from './segments-read.service';
-import { ClientEntity } from 'src/clients/client.entity';
+import { ClientEntity } from '../clients/client.entity';
 
 @Module({
   imports: [
