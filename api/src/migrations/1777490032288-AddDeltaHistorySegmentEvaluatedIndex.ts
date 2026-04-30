@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddDeltaHistorySegmentEvaluatedIndex1730000000000 implements MigrationInterface {
+export class AddDeltaHistorySegmentEvaluatedIndex1777490032288 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_delta_history_segment_evaluated

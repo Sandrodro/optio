@@ -77,7 +77,7 @@ services:
       elasticsearch: { condition: service_healthy }
     volumes:
       - ./api/src:/app/src # hot reload during dev
-    command: npm run start:dev
+    command: sh -c "npm run migration:run && npm run seed && npm run start:dev"
 
   ui:
     build: ./ui

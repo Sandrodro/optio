@@ -7,12 +7,13 @@ import { SegmentSeeder } from './segment-seeder';
 import { ClientEntity } from '../clients/client.entity';
 import { TransactionEntity } from '../transactions/transaction.entity';
 import { SegmentEntity } from '../segments/segment.entity';
+import { ComeBackCampaignSendEntity } from '../campaigns/come-back-campaign-send.entity';
 import { StatsCommand } from '../cli/stats.command';
 import { SegmentsModule } from '../segments/segments.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClientEntity, TransactionEntity, SegmentEntity]),
+    TypeOrmModule.forFeature([ClientEntity, TransactionEntity, SegmentEntity, ComeBackCampaignSendEntity]),
     SegmentsModule,
   ],
   providers: [
