@@ -16,6 +16,7 @@ import {
 
 interface UpdateClient {
   country?: string;
+  name?: string;
 }
 
 @Controller('clients')
@@ -32,7 +33,7 @@ export class ClientsController {
       throw new BadRequestException('body must contain at least one field');
     }
 
-    const allowedKeys = new Set(['country']);
+    const allowedKeys = new Set(['country', 'name']);
     for (const key of Object.keys(data)) {
       if (!allowedKeys.has(key)) {
         throw new BadRequestException(`field '${key}' is not updateable`);

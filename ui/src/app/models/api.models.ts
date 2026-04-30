@@ -1,3 +1,5 @@
+export const COUNTRIES = ['GE', 'US', 'GB', 'DE', 'FR', 'IT', 'ES', 'TR'] as const;
+
 export interface SegmentListItem {
   id: string;
   name: string;

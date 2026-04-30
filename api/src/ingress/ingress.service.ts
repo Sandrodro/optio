@@ -24,6 +24,7 @@ export interface IngestTransactionInput {
 
 export interface UpdateClientFieldsInput {
   country?: string;
+  name?: string;
 }
 
 export interface CreateClientInput {

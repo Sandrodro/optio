@@ -14,4 +14,15 @@ export class ClientService {
       params: { ids: ids.join(',') },
     });
   }
+
+  update(id: string, patch: { country?: string; name?: string }): Observable<{ ok: true }> {
+    return this.http.patch<{ ok: true }>(`${API}/clients/${id}`, patch);
+  }
+
+  createTransaction(clientId: string, amount: number): Observable<{ ok: true }> {
+    return this.http.post<{ ok: true }>(`${API}/transactions`, {
+      client_id: clientId,
+      amount,
+    });
+  }
 }

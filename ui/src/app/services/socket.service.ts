@@ -8,11 +8,16 @@ import { SegmentDeltaEvent } from '../models/api.models';
 export class SocketService implements OnDestroy {
   private socket: Socket = io('http://localhost:3000', { transports: ['websocket'] });
 
+  readonly allDeltas$: Observable<SegmentDeltaEvent> =
+    fromEvent<SegmentDeltaEvent>(this.socket as any, 'segment.delta');
+
+  joinSegments(ids: string[]): void {
+    ids.forEach(id => this.socket.emit('subscribe', { segmentId: id }));
+  }
+
   subscribeToSegment(segmentId: string): Observable<SegmentDeltaEvent> {
     this.socket.emit('subscribe', { segmentId });
-    return fromEvent<SegmentDeltaEvent>(this.socket as any, 'segment.delta').pipe(
-      filter(e => e.segment_id === segmentId)
-    );
+    return this.allDeltas$.pipe(filter(e => e.segment_id === segmentId));
   }
 
   unsubscribeFromSegment(segmentId: string): void {

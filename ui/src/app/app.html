@@ -1,2 +1,28 @@
 <app-simulation-bar />
 <router-outlet />
+
+<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 items-end">
+  @for (toast of toastSvc.toasts(); track toast.id) {
+    <div
+      class="w-80 rounded-xl bg-white border border-gray-200 shadow-lg px-4 py-3 flex items-start gap-3"
+      role="alert"
+    >
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-900 truncate">{{ toast.message }}</p>
+        <p class="text-sm text-gray-500 mt-0.5">
+          <span class="text-green-600 font-medium">+{{ toast.added }} added</span>
+          <span class="mx-1.5 text-gray-300">·</span>
+          <span class="text-red-500 font-medium">{{ toast.removed }} removed</span>
+        </p>
+      </div>
+      <button
+        (click)="toastSvc.dismiss(toast.id)"
+        class="shrink-0 text-gray-400 hover:text-gray-600 transition-colors mt-0.5"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  }
+</div>
