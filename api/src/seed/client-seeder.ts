@@ -49,7 +49,6 @@ export class ClientSeeder {
 
   private toEsDoc(c: ClientEntity) {
     return {
-      name: c.name,
       country: c.country,
       signup_date: c.signup_date,
       last_transaction_at: c.last_transaction_at,

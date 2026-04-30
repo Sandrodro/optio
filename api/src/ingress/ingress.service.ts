@@ -185,7 +185,10 @@ export class IngressService {
       throw new Error(`client ${clientId} not found`);
     }
 
-    await this.updateEsWithRetry(clientId, patch);
+    const { name: _, ...esPatch } = patch;
+    if (Object.keys(esPatch).length > 0) {
+      await this.updateEsWithRetry(clientId, esPatch);
+    }
 
     // dont recompute on name change events
     if (
@@ -258,7 +261,6 @@ export class IngressService {
     const operations = ids.flatMap((id, idx) => [
       { index: { _index: 'clients', _id: id } },
       {
-        name: chunk[idx].name,
         country: chunk[idx].country,
         signup_date: chunk[idx].signup_date ?? today,
         last_transaction_at: null,

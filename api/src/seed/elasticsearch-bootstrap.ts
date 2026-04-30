@@ -10,11 +10,10 @@ export async function ensureClientsIndex(es: Client): Promise<void> {
     index: 'clients',
     mappings: {
       properties: {
-        name: { type: 'text' }, // to search inside it
-        country: { type: 'keyword' }, // use as a category, or for exact searches
+        country: { type: 'keyword' },
         signup_date: { type: 'date' },
         last_transaction_at: { type: 'date' },
-        total_transaction_count: { type: 'long' }, // long for whole numbers, doable at our scale
+        total_transaction_count: { type: 'long' },
         total_purchases_60d: { type: 'double' },
       },
     },
