@@ -39,7 +39,7 @@ export class SegmentListComponent implements OnInit {
         ),
       );
       if (delta.segment_id === 'recent-buyers' && delta.removed_client_ids.length > 0) {
-        this.loadComeBackStats();
+        this.comeBackSent.update(c => c + delta.removed_client_ids.length);
       }
     });
   }
