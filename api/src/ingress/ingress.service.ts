@@ -188,18 +188,20 @@ export class IngressService {
 
     await this.updateEsWithRetry(clientId, patch);
 
-    const event: ClientUpdatedEvent = { client_id: clientId };
-
-    try {
-      await this.amqp.publish(
-        EXCHANGES.DATA_CHANGES,
-        DATA_CHANGE_KEYS.CLIENT_UPDATED,
-        event,
-      );
-    } catch (e) {
-      this.log.error(
-        `publish failed for client.updated ${clientId}: ${(e as Error).message}`,
-      );
+    const segmentRelevantKeys = Object.keys(patch).filter(k => k !== 'name');
+    if (segmentRelevantKeys.length > 0) {
+      const event: ClientUpdatedEvent = { client_id: clientId };
+      try {
+        await this.amqp.publish(
+          EXCHANGES.DATA_CHANGES,
+          DATA_CHANGE_KEYS.CLIENT_UPDATED,
+          event,
+        );
+      } catch (e) {
+        this.log.error(
+          `publish failed for client.updated ${clientId}: ${(e as Error).message}`,
+        );
+      }
     }
   }
 

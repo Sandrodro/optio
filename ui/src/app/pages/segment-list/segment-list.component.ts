@@ -24,23 +24,28 @@ export class SegmentListComponent implements OnInit {
   ngOnInit(): void {
     this.load();
 
-    this.socketSvc.allDeltas$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(delta => {
-        this.segments.update(list =>
-          list.map(s =>
-            s.id === delta.segment_id
-              ? { ...s, member_count: delta.total_members_after, last_evaluated_at: delta.evaluated_at }
-              : s
-          )
-        );
-      });
+    this.socketSvc.allDeltas$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((delta) => {
+      this.segments.update((list) =>
+        list.map((s) =>
+          s.id === delta.segment_id
+            ? {
+                ...s,
+                member_count: delta.total_members_after,
+                last_evaluated_at: delta.evaluated_at,
+              }
+            : s,
+        ),
+      );
+    });
   }
 
   load(): void {
     this.loading.set(true);
     this.segmentSvc.list().subscribe({
-      next: segs => { this.segments.set(segs); this.loading.set(false); },
+      next: (segs) => {
+        this.segments.set(segs);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
   }
@@ -52,12 +57,16 @@ export class SegmentListComponent implements OnInit {
     this.segmentSvc.recompute(seg.id).subscribe({
       next: (r: RecomputeResult) => {
         this.recomputingId.set(null);
-        this.segments.update(list =>
-          list.map(s =>
+        this.segments.update((list) =>
+          list.map((s) =>
             s.id === seg.id
-              ? { ...s, member_count: r.totalMembersAfter, last_evaluated_at: new Date().toISOString() }
-              : s
-          )
+              ? {
+                  ...s,
+                  member_count: r.totalMembersAfter,
+                  last_evaluated_at: new Date().toISOString(),
+                }
+              : s,
+          ),
         );
       },
       error: () => this.recomputingId.set(null),
