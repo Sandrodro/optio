@@ -90,6 +90,16 @@ export class SegmentRecomputeService {
       evaluated_at: new Date().toISOString(),
     };
 
+    if (added.length === 0 && removed.length === 0) {
+      return {
+        segmentId,
+        added,
+        removed,
+        totalMembersAfter: memberIds.length,
+        reason: recomputeReason,
+      };
+    }
+
     try {
       await this.amqp.publish(
         EXCHANGES.SEGMENT_EVENTS,

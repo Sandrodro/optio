@@ -1,7 +1,9 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SegmentService } from '../../services/segment.service';
+import { SocketService } from '../../services/socket.service';
 import { SegmentListItem, RecomputeResult } from '../../models/api.models';
 
 @Component({
@@ -11,7 +13,9 @@ import { SegmentListItem, RecomputeResult } from '../../models/api.models';
 })
 export class SegmentListComponent implements OnInit {
   private segmentSvc = inject(SegmentService);
+  private socketSvc = inject(SocketService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   segments = signal<SegmentListItem[]>([]);
   loading = signal(true);
@@ -19,15 +23,24 @@ export class SegmentListComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+
+    this.socketSvc.allDeltas$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(delta => {
+        this.segments.update(list =>
+          list.map(s =>
+            s.id === delta.segment_id
+              ? { ...s, member_count: delta.total_members_after, last_evaluated_at: delta.evaluated_at }
+              : s
+          )
+        );
+      });
   }
 
   load(): void {
     this.loading.set(true);
     this.segmentSvc.list().subscribe({
-      next: segs => {
-        this.segments.set(segs);
-        this.loading.set(false);
-      },
+      next: segs => { this.segments.set(segs); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }

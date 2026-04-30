@@ -79,17 +79,14 @@ export class SegmentSeeder {
         },
       },
       {
-        id: 'georgian-launch-cohort',
-        name: 'Georgian launch cohort (static)',
+        id: 'georgian-cohort',
+        name: 'Georgian cohort',
         type: 'static',
         rules: {
           esQuery: esb
             .requestBodySearch()
             .query(
-              esb
-                .boolQuery()
-                .filter(esb.termQuery('country', 'GE'))
-                .filter(esb.rangeQuery('signup_date').lte('2026-03-01')),
+              esb.boolQuery().filter(esb.termQuery('country', 'GE')),
             )
             .toJSON(),
           segmentDependencies: [],

@@ -7,7 +7,7 @@ const EVALUATION_ORDER = [
   'recent-buyers',
   'high-spenders',
   'lapsed-customers',
-  'georgian-launch-cohort',
+  'georgian-cohort',
   'lapsed-high-value', // depends on high-spenders + lapsed-customers
 ];
 

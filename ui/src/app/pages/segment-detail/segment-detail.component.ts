@@ -180,6 +180,39 @@ export class SegmentDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Delta drill-down modal ──────────────────────────────────────────────────
+
+  selectedDelta = signal<DeltaHistoryItem | null>(null);
+  deltaDetail = signal<{ added: ClientDto[]; removed: ClientDto[] } | null>(null);
+  deltaDetailLoading = signal(false);
+
+  openDelta(item: DeltaHistoryItem): void {
+    this.selectedDelta.set(item);
+    this.deltaDetail.set(null);
+    const allIds = [...item.added_client_ids, ...item.removed_client_ids];
+    if (allIds.length === 0) {
+      this.deltaDetail.set({ added: [], removed: [] });
+      return;
+    }
+    this.deltaDetailLoading.set(true);
+    this.clientSvc.getByIds(allIds).subscribe({
+      next: res => {
+        const byId = new Map(res.clients.map(c => [c.id, c]));
+        this.deltaDetail.set({
+          added: item.added_client_ids.map(id => byId.get(id)).filter(Boolean) as ClientDto[],
+          removed: item.removed_client_ids.map(id => byId.get(id)).filter(Boolean) as ClientDto[],
+        });
+        this.deltaDetailLoading.set(false);
+      },
+      error: () => this.deltaDetailLoading.set(false),
+    });
+  }
+
+  closeDelta(): void {
+    this.selectedDelta.set(null);
+    this.deltaDetail.set(null);
+  }
+
   // ── Transaction modal ───────────────────────────────────────────────────────
 
   openTxnModal(client: ClientDto): void {
