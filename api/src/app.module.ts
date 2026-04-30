@@ -17,6 +17,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { WebsocketModule } from './websocket/websocket.module';
 import { SimulationModule } from './simulation/simulation.module';
 import { ClientsModule } from './clients/client.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+import { ComeBackCampaignSendEntity } from './campaigns/come-back-campaign-send.entity';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { ClientsModule } from './clients/client.module';
         DeltaHistoryEntity,
         TransactionEntity,
         SegmentEntity,
+        ComeBackCampaignSendEntity,
       ], // glob pattern did not work
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
       logging: ['error', 'warn'],
@@ -44,6 +47,7 @@ import { ClientsModule } from './clients/client.module';
     WebsocketModule,
     SimulationModule,
     ClientsModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

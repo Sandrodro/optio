@@ -21,4 +21,5 @@ export const QUEUES = {
   CASCADE: 'cascade.q',
   UI_PUSH: 'ui.push.q',
   AUDIT: 'audit.q',
+  COME_BACK_CAMPAIGN: 'come-back-campaign.q',
 } as const;

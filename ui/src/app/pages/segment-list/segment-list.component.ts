@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SegmentService } from '../../services/segment.service';
 import { SocketService } from '../../services/socket.service';
@@ -8,7 +8,7 @@ import { SegmentListItem, RecomputeResult } from '../../models/api.models';
 
 @Component({
   selector: 'app-segment-list',
-  imports: [DatePipe],
+  imports: [DatePipe, DecimalPipe],
   templateUrl: './segment-list.component.html',
 })
 export class SegmentListComponent implements OnInit {
@@ -20,9 +20,11 @@ export class SegmentListComponent implements OnInit {
   segments = signal<SegmentListItem[]>([]);
   loading = signal(true);
   recomputingId = signal<string | null>(null);
+  comeBackSent = signal(0);
 
   ngOnInit(): void {
     this.load();
+    this.loadComeBackStats();
 
     this.socketSvc.allDeltas$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((delta) => {
       this.segments.update((list) =>
@@ -36,7 +38,14 @@ export class SegmentListComponent implements OnInit {
             : s,
         ),
       );
+      if (delta.segment_id === 'recent-buyers' && delta.removed_client_ids.length > 0) {
+        this.loadComeBackStats();
+      }
     });
+  }
+
+  private loadComeBackStats(): void {
+    this.segmentSvc.getComeBackStats().subscribe(s => this.comeBackSent.set(s.total_sent));
   }
 
   load(): void {

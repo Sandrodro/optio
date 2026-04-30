@@ -28,4 +28,8 @@ export class SegmentService {
   recompute(id: string): Observable<RecomputeResult> {
     return this.http.post<RecomputeResult>(`${API}/segments/${id}/recompute`, {});
   }
+
+  getComeBackStats(): Observable<{ total_sent: number }> {
+    return this.http.get<{ total_sent: number }>(`${API}/campaigns/come-back`);
+  }
 }
