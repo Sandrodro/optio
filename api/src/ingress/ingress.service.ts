@@ -15,6 +15,7 @@ import { BulkImportedEvent } from '../messaging/messaging.events';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SIXTY_DAYS_MS = 60 * ONE_DAY_MS;
+const SEGMENT_IRRELEVANT_FIELDS: (keyof UpdateClientFieldsInput)[] = ['name'];
 
 export interface IngestTransactionInput {
   client_id: string;
@@ -46,8 +47,6 @@ export class IngressService {
     @InjectDataSource() private readonly datasource: DataSource,
     @InjectRepository(ClientEntity)
     private readonly clients: Repository<ClientEntity>,
-    @InjectRepository(TransactionEntity)
-    private readonly transactions: Repository<TransactionEntity>,
     @Inject(ES_CLIENT) private readonly es: EsClient,
     private readonly amqp: AmqpConnection,
   ) {}
@@ -188,8 +187,15 @@ export class IngressService {
 
     await this.updateEsWithRetry(clientId, patch);
 
-    const segmentRelevantKeys = Object.keys(patch).filter(k => k !== 'name');
-    if (segmentRelevantKeys.length > 0) {
+    // dont recompute on name change events
+    if (
+      Object.keys(patch).some(
+        (k) =>
+          !SEGMENT_IRRELEVANT_FIELDS.includes(
+            k as keyof UpdateClientFieldsInput,
+          ),
+      )
+    ) {
       const event: ClientUpdatedEvent = { client_id: clientId };
       try {
         await this.amqp.publish(

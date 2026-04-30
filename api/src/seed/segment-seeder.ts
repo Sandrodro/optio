@@ -85,9 +85,7 @@ export class SegmentSeeder {
         rules: {
           esQuery: esb
             .requestBodySearch()
-            .query(
-              esb.boolQuery().filter(esb.termQuery('country', 'GE')),
-            )
+            .query(esb.boolQuery().filter(esb.termQuery('country', 'GE')))
             .toJSON(),
           segmentDependencies: [],
         },
