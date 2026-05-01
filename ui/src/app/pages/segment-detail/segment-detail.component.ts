@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +13,7 @@ import { ClientDto, DeltaHistoryItem, SegmentListItem, COUNTRIES } from '../../m
   imports: [DatePipe, DecimalPipe, FormsModule],
   templateUrl: './segment-detail.component.html',
 })
-export class SegmentDetailComponent implements OnInit, OnDestroy {
+export class SegmentDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private segmentSvc = inject(SegmentService);
@@ -48,19 +48,10 @@ export class SegmentDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const id = params.get('id')!;
-      if (this.segmentId && this.segmentId !== id) {
-        this.socketSvc.unsubscribeFromSegment(this.segmentId);
-      }
       this.segmentId = id;
       this.loadAll(id);
       this.listenToSocket(id);
     });
-  }
-
-  ngOnDestroy(): void {
-    if (this.segmentId) {
-      this.socketSvc.unsubscribeFromSegment(this.segmentId);
-    }
   }
 
   private loadAll(id: string): void {
