@@ -1,98 +1,173 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Optio Segments
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+System that divides existing customers into predefined segments, and displays this to the ui. The segment memberships are updated in real-time as client info changes/they get added transactions. Segment updates emit events, upon which marketing campaigns can be built (client X entered segment Y, send them a "Welcome" message).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Setup
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+**Prerequisites:** Docker + Docker Compose.
 
 ```bash
-$ npm install
+docker compose up
 ```
 
-## Compile and run the project
+This boots Postgres 16, Redis 7, RabbitMQ 3.13, Elasticsearch 8, the NestJS API (port 3000), and the Angular UI (port 4200). Healthchecks gate startup so the API only starts once its dependencies are ready.
+
+The API container's startup command runs migrations and the seed automatically:
+
+```
+npm run migration:run && npm run seed && npm run start:dev
+```
+
+The seed creates **500 clients**, transactions across the past ~140 days, and **5 segments** (4 dynamic + 1 static, including one cascade segment).
+
+To re-seed manually after experimentation:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose exec api npm run seed
 ```
 
-## Run tests
+Once running:
 
-```bash
-# unit tests
-$ npm run test
+- UI: <http://localhost:4200>
+- API: <http://localhost:3000>
+- RabbitMQ console: <http://localhost:15672> (login `optio` / `optio`)
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
+## Seeded segments
+
+| ID                  | Type    | Rule                                                                 |
+| ------------------- | ------- | -------------------------------------------------------------------- |
+| `recent-buyers`     | dynamic | last transaction in last 14 days                                     |
+| `high-spenders`     | dynamic | total purchases in last 60 days > 1200                               |
+| `lapsed-customers`  | dynamic | ≥3 transactions ever AND last transaction >24 days ago               |
+| `lapsed-high-value` | dynamic | members of `high-spenders` ∩ members of `lapsed-customers` (cascade) |
+| `georgian-cohort`   | static  | country = 'GE', frozen at seed time                                  |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[Angular UI<br/>:4200]
+  API[NestJS API<br/>:3000]
+  PG[(Postgres)]
+  ES[(Elasticsearch)]
+  R[(Redis)]
+  RMQ{{RabbitMQ}}
+
+  CC[Cascade Consumer]
+  WS[WS Gateway]
+  CB[Come-back<br/>Campaign]
+
+  UI <-->|HTTP + WS| API
+  API --> PG
+  API -->|dual-write| ES
+  API <-->|snapshots + scheduler| R
+  API -->|data.changes| RMQ
+  RMQ -->|data.changes| API
+  API -->|segment.events| RMQ
+  RMQ --> CC
+  RMQ --> WS
+  RMQ --> CB
+  CC -->|reschedule dependents| R
+  WS -.push.-> UI
 ```
 
-## Deployment
+Two exchanges by lifecycle:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- **`data.changes`** — input: transactions, client edits, bulk imports.
+- **`segment.events`** — output: a delta was computed.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Three consumers attach to `segment.events` independently — `cascade.q`, `ui.push.q`, `come-back-campaign.q`.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+### New transaction flow
+
+```mermaid
+sequenceDiagram
+  participant U as Caller
+  participant A as IngressService
+  participant PG as Postgres
+  participant ES as Elasticsearch
+  participant Q as RabbitMQ data.changes
+  participant Z as Redis ZSET
+  participant T as Tick (200ms)
+  participant SR as RecomputeService
+
+  U->>A: POST /transactions
+  A->>PG: txn + rollups (SELECT FOR UPDATE)
+  A->>ES: dual-write (wait_for + retry)
+  A->>Q: publish transaction.created
+  Q->>A: SegmentRecomputeConsumer
+  A->>Z: ZADD due=now+500ms<br/>(member="event:<id>")
+  T->>Z: drain due via Lua
+  T->>SR: recompute(id, "event")
+  SR->>ES: evaluate rule
+  SR->>SR: SDIFF temp vs canon → delta
+  SR->>PG: insert delta_history
+  SR->>Q: publish segment.delta.computed
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Cascade
 
-## Resources
+```mermaid
+sequenceDiagram
+  participant SR as RecomputeService
+  participant Q as RabbitMQ segment.events
+  participant CC as CascadeConsumer
+  participant Z as Redis ZSET
+  participant SR2 as RecomputeService
 
-Check out a few resources that may come in handy when working with NestJS:
+  SR->>Q: segment.delta.computed (id=A)
+  Q->>CC: deliver
+  CC->>CC: PG: WHERE rules->'segmentDependencies' @> "A"
+  CC->>Z: ZADD member="cascade:B"
+  Z->>SR2: drain (next tick)
+  SR2->>Q: publish next delta (cascade)
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## Architectural decisions and trade-offs
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Elasticsearch (not Postgres) for segment evaluation
 
-## Stay in touch
+We currently store clients data both in ES and PG, as well as rollups to determine certain segment memberships (total_purchases_60d). but we do the querying in ES. This decision was made because of the speed of ES, the tradeoff of duplicate writes was considered acceptable.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Trailing-edge debounce with max-age cap
 
-## License
+Dynamic segments need to recompute on data change, but a 500-events-per-minute stream shouldn't fire 500 recomputes.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+Implementation: ZSET keyed on `${reason}:${segmentId}`. Each `ZADD` upserts the score forward. A parallel hash records first-scheduled time per member, and the schedule Lua script computes `dueAt = min(now + 500ms, firstAt + 5000ms)` so the entry can't be deferred past 5s. The drain Lua atomically pops the ZSET and clears the hash.
+
+**Why ZSET over RabbitMQ delayed-message exchange:** Rabbit's delayed plugin doesn't dedup — 500 events publish 500 deferred messages. ZSET upserts dedup on the member by construction.
+
+### Membership Delta computation via redis
+
+Recomputation of segment memberships via Redis `SDIFF`. We store the IDs of previous and current members - do a two way diff (temp -> canonical, canonical -> temp) to compute the delta. after recompute, `temp` becomes `canonical`.
+
+### Two exchanges, not one
+
+`data.changes` (input) and `segment.events` (output) are separate exchanges _by lifecycle_. Three consumers (cascade, WebSocket gateway, come-back campaign) each bind their own queue to `segment.events`. Could have done with only one exchange, but thought that input-output separation would be cleaner than namespacing the events into inputs and outputs.
+
+### Static segments: filter at the consumer, not in the recompute service
+
+`SegmentRecomputeConsumer` filters its segment query to `type = 'dynamic'`. That's the _whole_ mechanism — static segments are simply never scheduled by data events. The recompute service itself is type-agnostic, which is why `POST /segments/:id/recompute` works on both types.
+
+### Destructive fast-forward over clock injection
+
+Currently fast-forward is achieved by changing the dates of the transaction records by X days. Could have implemented a dynamic clock service (code would reference the dynamic clock instead of Date.now()), but could not fit into scope, would lead to difficulties (ES date filtering in particular).
+
+---
+
+## Future improvements
+
+- Topological sort of segment dependency graph (matters at multi-level cascades).
+- Replace dual-write with CDC (Debezium → Kafka → ES).
+- Transactional outbox for Rabbit publishes.
+- AuthN / AuthZ / rate limits on simulation endpoints.
