@@ -137,6 +137,10 @@ sequenceDiagram
 
 We currently store clients data both in ES and PG, as well as rollups to determine certain segment memberships (total_purchases_60d). but we do the querying in ES. This decision was made because of the speed of ES, the tradeoff of duplicate writes was considered acceptable.
 
+## Note on dependant segments:
+
+The segment that depends on other segments (`lapsed-high-value`, depends on `high-value` and `lapsed-customers`), is being recalculated only using the IDs stored in redis, i decided for splitting the evaluation path into two branches (ES for normal dynamic branches, finding the common IDs of `high-value` and `lapsed-customers` in Redis for the composite segment) to get the speed benefit.
+
 ### Trailing-edge debounce with max-age cap
 
 Dynamic segments need to recompute on data change, but a 500-events-per-minute stream shouldn't fire 500 recomputes.
