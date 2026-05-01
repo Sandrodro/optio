@@ -137,7 +137,7 @@ sequenceDiagram
 
 We currently store clients data both in ES and PG, as well as rollups to determine certain segment memberships (total_purchases_60d). but we do the querying in ES. This decision was made because of the speed of ES, the tradeoff of duplicate writes was considered acceptable.
 
-## Note on dependant segments:
+## Note on dependant segments
 
 The segment that depends on other segments (`lapsed-high-value`, depends on `high-value` and `lapsed-customers`), is being recalculated only using the IDs stored in redis, i decided for splitting the evaluation path into two branches (ES for normal dynamic branches, finding the common IDs of `high-value` and `lapsed-customers` in Redis for the composite segment) to get the speed benefit.
 
@@ -145,11 +145,11 @@ The segment that depends on other segments (`lapsed-high-value`, depends on `hig
 
 Dynamic segments need to recompute on data change, but a 500-events-per-minute stream shouldn't fire 500 recomputes.
 
-
-
 Implementation: ZSET keyed on `${reason}:${segmentId}`. Each `ZADD` upserts the score forward. A parallel hash records first-scheduled time per member, and the schedule Lua script computes `dueAt = min(now + 500ms, firstAt + 5000ms)` so the entry can't be deferred past 5s. The drain Lua atomically pops the ZSET and clears the hash.
 
-**Why ZSET over RabbitMQ delayed-message exchange:** Rabbit's delayed plugin doesn't dedup — 500 events publish 500 deferred messages. ZSET upserts dedup on the member by construction.
+## Why Trailing-edge and not Leading-edge
+
+Trailing-edge debounce so the recompute reflects the latest state after a burst (leading-edge / throttle would lock in the first event's snapshot and silently drop later changes). Capped by a 5s max-age so a never-quiet stream can't postpone a recompute forever.
 
 ### Membership Delta computation via redis
 
