@@ -147,7 +147,7 @@ Dynamic segments need to recompute on data change, but a 500-events-per-minute s
 
 Implementation: ZSET keyed on `${reason}:${segmentId}`. Each `ZADD` upserts the score forward. A parallel hash records first-scheduled time per member, and the schedule Lua script computes `dueAt = min(now + 500ms, firstAt + 5000ms)` so the entry can't be deferred past 5s. The drain Lua atomically pops the ZSET and clears the hash.
 
-#  Why Trailing-edge and not Leading-edge
+**Why Trailing-edge and not Leading-edge
 
 Trailing-edge debounce so the recompute reflects the latest state after a burst (leading-edge / throttle would lock in the first event's snapshot and silently drop later changes). Capped by a 5s max-age so a never-quiet stream can't postpone a recompute forever.
 
