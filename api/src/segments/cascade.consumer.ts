@@ -54,6 +54,6 @@ export class CascadeConsumer {
       `${sourceId} delta → cascading to ${dependentIds.length}: ${dependentIds.join(', ')}`,
     );
 
-    await this.scheduler.scheduleMany(dependentIds);
+    await this.scheduler.scheduleMany(dependentIds, 'cascade');
   }
 }

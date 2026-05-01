@@ -12,6 +12,7 @@ import { RecomputeTickService } from './recompute-tick.service';
 import { SegmentRecomputeConsumer } from './segment-recompute.consumer';
 import { CascadeConsumer } from './cascade.consumer';
 import { SegmentsReadService } from './segments-read.service';
+import { SegmentsWriteService } from './segments-write.service';
 import { ClientEntity } from '../clients/client.entity';
 
 @Module({
@@ -28,6 +29,7 @@ import { ClientEntity } from '../clients/client.entity';
     SegmentRecomputeConsumer,
     CascadeConsumer,
     SegmentsReadService,
+    SegmentsWriteService,
   ],
   exports: [SegmentEvaluator, SegmentRecomputeService, EvaluateAllCommand],
   controllers: [SegmentsController],

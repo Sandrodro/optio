@@ -3,4 +3,6 @@ export const RedisKeys = {
   segmentMembersTemp: (segmentId: string) =>
     `segment:members:${segmentId}:temp`,
   pendingRecomputes: () => 'segments:pending_recomputes',
+  pendingRecomputeFirstScheduled: () =>
+    'segments:pending_recomputes:first_scheduled',
 } as const;

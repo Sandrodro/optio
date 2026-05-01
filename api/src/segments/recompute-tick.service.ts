@@ -4,13 +4,19 @@ import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { RedisKeys } from '../redis/redis.keys';
 import { SegmentRecomputeService } from './segment-recompute.service';
+import { DeltaReason } from './delta-history.entity';
 
 const TICK_INTERVAL_MS = 200;
 
+// Atomically pops all due members from the ZSET and clears their first-scheduled
+// hash entries so the next event after a drain starts a fresh max-age round.
 const DRAIN_LUA = `
   local due = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
   if #due > 0 then
     redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+    for i, member in ipairs(due) do
+      redis.call('HDEL', KEYS[2], member)
+    end
   end
   return due
 `;
@@ -38,8 +44,9 @@ export class RecomputeTickService implements OnModuleInit {
       const now = Date.now();
       const due = (await this.redis.eval(
         DRAIN_LUA,
-        1,
+        2,
         RedisKeys.pendingRecomputes(),
+        RedisKeys.pendingRecomputeFirstScheduled(),
         now.toString(),
       )) as string[];
 
@@ -47,9 +54,23 @@ export class RecomputeTickService implements OnModuleInit {
 
       this.log.log(`draining ${due.length} due segment(s): ${due.join(', ')}`);
 
-      for (const segmentId of due) {
+      for (const member of due) {
+        const colonIdx = member.indexOf(':');
+        let reason: DeltaReason;
+        let segmentId: string;
+
+        if (colonIdx === -1) {
+          // Defensive fallback for any legacy plain-ID entries.
+          this.log.warn(`malformed pending member (no reason prefix): ${member}`);
+          reason = 'event';
+          segmentId = member;
+        } else {
+          reason = member.slice(0, colonIdx) as DeltaReason;
+          segmentId = member.slice(colonIdx + 1);
+        }
+
         try {
-          await this.recompute.recompute(segmentId, 'event');
+          await this.recompute.recompute(segmentId, reason);
         } catch (e) {
           this.log.error(
             `recompute failed for ${segmentId}: ${(e as Error).message}`,

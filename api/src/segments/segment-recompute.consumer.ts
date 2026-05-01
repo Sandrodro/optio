@@ -40,7 +40,7 @@ export class SegmentRecomputeConsumer {
       .getMany();
 
     const ids = rootSegments.map((s) => s.id);
-    await this.scheduler.scheduleMany(ids);
+    await this.scheduler.scheduleMany(ids, 'event');
 
     this.log.debug(
       `scheduled ${ids.length} root dynamic segment(s) after ${routingKey}`,

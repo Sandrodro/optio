@@ -1,16 +1,34 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { SegmentEvaluator } from './segment-evaluator.service';
 import { SegmentRecomputeService } from './segment-recompute.service';
 import { SegmentsReadService } from './segments-read.service';
+import { SegmentsWriteService } from './segments-write.service';
+
+interface CreateSegmentBody {
+  id: string;
+  name: string;
+  type: 'dynamic' | 'static';
+  rules: { esQuery: object; segmentDependencies?: string[] };
+}
+
+interface UpdateSegmentBody {
+  name?: string;
+  rules?: { esQuery: object; segmentDependencies?: string[] };
+}
 
 @Controller('segments')
 export class SegmentsController {
@@ -18,6 +36,7 @@ export class SegmentsController {
     private readonly evaluator: SegmentEvaluator,
     private readonly recompute: SegmentRecomputeService,
     private readonly reads: SegmentsReadService,
+    private readonly writes: SegmentsWriteService,
   ) {}
 
   @Get()
@@ -60,5 +79,67 @@ export class SegmentsController {
   @Post(':id/recompute')
   async recomputeSegment(@Param('id') id: string) {
     return this.recompute.recompute(id, 'manual');
+  }
+
+  @Post()
+  async createSegment(@Body() body: CreateSegmentBody) {
+    if (!body?.id || typeof body.id !== 'string') {
+      throw new BadRequestException('id is required');
+    }
+    if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(body.id)) {
+      throw new BadRequestException('id must be lowercase alphanumeric with hyphens, max 63 chars');
+    }
+    if (!body.name || typeof body.name !== 'string' || body.name.length > 200) {
+      throw new BadRequestException('name is required (max 200 chars)');
+    }
+    if (body.type !== 'dynamic' && body.type !== 'static') {
+      throw new BadRequestException("type must be 'dynamic' or 'static'");
+    }
+    if (!body.rules || typeof body.rules.esQuery !== 'object' || body.rules.esQuery === null) {
+      throw new BadRequestException('rules.esQuery must be an object');
+    }
+    if (
+      body.rules.segmentDependencies !== undefined &&
+      !Array.isArray(body.rules.segmentDependencies)
+    ) {
+      throw new BadRequestException('rules.segmentDependencies must be an array');
+    }
+
+    return this.writes.createSegment(body);
+  }
+
+  @Patch(':id')
+  async updateSegment(@Param('id') id: string, @Body() body: UpdateSegmentBody) {
+    const allowedKeys = new Set(['name', 'rules']);
+    for (const key of Object.keys(body ?? {})) {
+      if (!allowedKeys.has(key)) {
+        throw new BadRequestException(`field '${key}' cannot be updated`);
+      }
+    }
+    if (!body?.name && !body?.rules) {
+      throw new BadRequestException('body must contain at least one of: name, rules');
+    }
+    if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length > 200)) {
+      throw new BadRequestException('name must be a string (max 200 chars)');
+    }
+    if (body.rules !== undefined) {
+      if (typeof body.rules.esQuery !== 'object' || body.rules.esQuery === null) {
+        throw new BadRequestException('rules.esQuery must be an object');
+      }
+      if (
+        body.rules.segmentDependencies !== undefined &&
+        !Array.isArray(body.rules.segmentDependencies)
+      ) {
+        throw new BadRequestException('rules.segmentDependencies must be an array');
+      }
+    }
+
+    return this.writes.updateSegment(id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteSegment(@Param('id') id: string) {
+    await this.writes.deleteSegment(id);
   }
 }
