@@ -24,13 +24,49 @@ export class SegmentEvaluator {
 
     if (!segment) throw new NotFoundException(`segment ${segmentId} not found`);
 
-    const depFilters = await this.buildDependencyFilters(
-      segment.rules.segmentDependencies,
-    );
+    const deps = segment.rules.segmentDependencies;
 
+    if (deps.length > 0 && this.isNoOpQuery(segment.rules.esQuery)) {
+      this.log.debug(`evaluate ${segmentId}: pure-cascade fast path (SINTER)`);
+      const keys = deps.map((d) => RedisKeys.segmentMembers(d));
+      return this.redis.sinter(...keys);
+    }
+
+    const depFilters = await this.buildDependencyFilters(deps);
     const query = this.mergeFilters(segment.rules.esQuery, depFilters);
-
     return this.searchAllIds(query);
+  }
+
+  private isNoOpQuery(esQuery: unknown): boolean {
+    if (typeof esQuery !== 'object' || esQuery === null) return false;
+    const q = (esQuery as any).query;
+    if (typeof q !== 'object' || q === null) return false;
+    const qKeys = Object.keys(q);
+    if (qKeys.length !== 1) return false;
+
+    if (qKeys[0] === 'match_all') {
+      return typeof q.match_all === 'object' && q.match_all !== null
+        && Object.keys(q.match_all).length === 0;
+    }
+
+    if (qKeys[0] === 'bool') {
+      const b = q.bool;
+      if (typeof b !== 'object' || b === null) return false;
+      const bKeys = Object.keys(b);
+      if (bKeys.length === 0) return true;
+      if (bKeys.length !== 1 || bKeys[0] !== 'must') return false;
+      const must = b.must;
+      const clauses = Array.isArray(must) ? must : [must];
+      if (clauses.length !== 1) return false;
+      const c = clauses[0];
+      return typeof c === 'object' && c !== null
+        && Object.keys(c).length === 1
+        && c.match_all !== undefined
+        && typeof c.match_all === 'object'
+        && Object.keys(c.match_all).length === 0;
+    }
+
+    return false;
   }
 
   private async buildDependencyFilters(
