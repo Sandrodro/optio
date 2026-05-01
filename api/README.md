@@ -163,11 +163,6 @@ Recomputation of segment memberships via Redis `SDIFF`. We store the IDs of prev
 
 Currently fast-forward is achieved by changing the dates of the transaction records by X days. Could have implemented a dynamic clock service (code would reference the dynamic clock instead of Date.now()), but could not fit into scope, would lead to difficulties (ES date filtering in particular).
 
----
+### AI usage
 
-## Future improvements
-
-- Topological sort of segment dependency graph (matters at multi-level cascades).
-- Replace dual-write with CDC (Debezium → Kafka → ES).
-- Transactional outbox for Rabbit publishes.
-- AuthN / AuthZ / rate limits on simulation endpoints.
+Used Claude (Opus 4.x) heavily for trade-off analysis, boilerplate (controllers, DTOs, Angular plumbing), and documentation. Architectural decisions are mine; happy to defend any of them.
